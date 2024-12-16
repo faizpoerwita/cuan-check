@@ -1,9 +1,9 @@
-import fetch from 'node-fetch';
+const fetch = require('node-fetch');
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY || "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";
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 
-export const handler = async (event) => {
+exports.handler = async (event) => {
   // Enable CORS
   if (event.httpMethod === 'OPTIONS') {
     return {

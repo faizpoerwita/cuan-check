@@ -1,19 +1,22 @@
 {
   "name": "cuan-check",
   "version": "1.0.0",
+  "description": "Financial insights app",
   "type": "module",
-  "description": "Aplikasi manajemen keuangan personal",
+  "main": "index.js",
   "scripts": {
     "dev": "npm run dev --prefix client",
     "build": "npm run build --prefix client",
     "install-client": "cd client && npm install",
-    "postinstall": "npm run install-client"
+    "postinstall": "npm run install-client",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.21.2",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^2.7.0"
   }
 }
