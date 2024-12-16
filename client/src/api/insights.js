@@ -1,6 +1,5 @@
 const API_KEY = import.meta.env.VITE_API_KEY || "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";
 const API_URL = import.meta.env.VITE_API_URL || "https://api.groq.com/openai/v1/chat/completions";
-const BASE_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
 
 export const getFinancialInsights = async (data) => {
   try {
@@ -29,40 +28,7 @@ export const getFinancialInsights = async (data) => {
     const yearlySavings = monthlySavings * 12;
     const savingsRatio = (monthlySavings / monthlyIncome) * 100;
 
-    // Time-based expenses
-    const dailyExpenses = totalExpenses / 30;
-    const weeklyExpenses = totalExpenses / 4;
-
-    // Target Progress
-    const target1YearProgress = (yearlySavings / target1Year) * 100;
-    const target2YearProgress = (yearlySavings * 2 / target2Year) * 100;
-    const monthsToTarget1 = target1Year / monthlySavings;
-    const monthsToTarget2 = target2Year / monthlySavings;
-
-    // Basic expense analysis for AI context
-    const expenseAnalysis = {
-      total: totalExpenses,
-      daily: dailyExpenses,
-      weekly: weeklyExpenses,
-      monthly: totalExpenses,
-      breakdown: Object.entries(expenses)
-        .sort(([,a], [,b]) => b - a)
-        .map(([label, amount]) => ({
-          label,
-          amount,
-          percentage: (amount / totalExpenses) * 100
-        }))
-    };
-
-    // Financial health indicators
-    const healthIndicators = {
-      savingsRatio,
-      expenseToIncomeRatio: (totalExpenses / monthlyIncome) * 100,
-      largestExpenseRatio: Math.max(...Object.values(expenses)) / totalExpenses * 100,
-      targetProgress: (yearlySavings / target1Year) * 100
-    };
-
-    // Prepare comprehensive data for AI analysis
+    // Prepare the system message
     const systemMessage = {
       role: "system",
       content: `Anda adalah asisten keuangan AI yang menganalisis data berikut:
@@ -74,13 +40,13 @@ export const getFinancialInsights = async (data) => {
 • Rasio Tabungan: ${savingsRatio.toFixed(1)}%
 
 [RINCIAN PENGELUARAN]
-${expenseAnalysis.breakdown
-  .map(item => `• ${item.label}: ${item.amount} (${item.percentage.toFixed(1)}%)`)
+${Object.entries(expenses)
+  .map(([label, amount]) => `• ${label}: ${amount}`)
   .join('\n')}
 
 [TARGET KEUANGAN]
-• Target 1 Tahun: ${target1Year} (Progress: ${target1YearProgress.toFixed(1)}%)
-• Target 2 Tahun: ${target2Year} (Progress: ${target2YearProgress.toFixed(1)}%)
+• Target 1 Tahun: ${target1Year} 
+• Target 2 Tahun: ${target2Year} 
 
 [INFORMASI TAMBAHAN]
 • Usia: ${currentAge} tahun
@@ -99,14 +65,13 @@ Analisis harus mempertimbangkan semua aspek data yang diberikan dan memberikan w
 
     const messages = [systemMessage];
 
-    const response = await fetch(`${BASE_URL}/api/insights`, {
+    const response = await fetch('/.netlify/functions/insights', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
-      mode: 'cors',
-      credentials: 'include',
       body: JSON.stringify({
+        messages,
         monthlyIncome,
         currentAge,
         retirementAge,
@@ -122,14 +87,11 @@ Analisis harus mempertimbangkan semua aspek data yang diberikan dan memberikan w
     });
 
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error('Server response:', errorData);
-      throw new Error('Failed to generate insights');
+      throw new Error('Network response was not ok');
     }
 
     const result = await response.json();
-    return result.data;
-
+    return result;
   } catch (error) {
     console.error('Error generating insights:', error);
     throw error;
