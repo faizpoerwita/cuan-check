@@ -1,0 +1,19 @@
+{
+  "name": "cuan-check",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Aplikasi manajemen keuangan personal",
+  "scripts": {
+    "dev": "npm run dev --prefix client",
+    "build": "npm run build --prefix client",
+    "install-client": "cd client && npm install",
+    "postinstall": "npm run install-client"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "node-fetch": "^3.3.2"
+  }
+}
