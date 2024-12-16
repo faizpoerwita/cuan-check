@@ -103,9 +103,22 @@ Analisis harus mempertimbangkan semua aspek data yang diberikan dan memberikan w
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
       },
-      body: JSON.stringify({ messages })
+      mode: 'cors',
+      credentials: 'include',
+      body: JSON.stringify({
+        monthlyIncome,
+        currentAge,
+        retirementAge,
+        yearsToRetirement,
+        target1Year,
+        target2Year,
+        expenses,
+        totalExpenses,
+        monthlySavings,
+        yearlySavings,
+        savingsRatio
+      })
     });
 
     if (!response.ok) {

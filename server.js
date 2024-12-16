@@ -11,20 +11,25 @@ const __dirname = dirname(__filename);
 const app = express();
 const port = process.env.PORT || 3001;
 
-// CORS middleware
+// Enable CORS for all routes
+app.use(cors());
+
+// Additional CORS headers middleware
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'https://cuancheck.netlify.app');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   
-  // Handle preflight requests
   if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-  } else {
-    next();
+    return res.status(200).end();
   }
+  next();
 });
+
+// Body parsing middleware
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'client/build')));
 
 // Add logging middleware
 app.use((req, res, next) => {
@@ -32,13 +37,16 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'client/build')));
-
 const GROQ_API_KEY = process.env.GROQ_API_KEY || "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";
 const GROQ_API_URL = process.env.GROQ_API_URL || "https://api.groq.com/openai/v1/chat/completions";
 
+// Insights endpoint with CORS headers
 app.post('/api/insights', async (req, res) => {
+  // Set CORS headers specifically for this endpoint
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
   try {
     console.log('Received request:', req.body);
     
