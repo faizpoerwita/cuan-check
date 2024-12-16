@@ -1,32 +1,56 @@
 const fetch = require('node-fetch');
 
-const GROQ_API_KEY = process.env.GROQ_API_KEY || "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";
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 exports.handler = async (event) => {
   // Enable CORS
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Content-Type': 'application/json'
+  };
+
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS'
-      }
+      headers
     };
   }
 
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
-      body: 'Method Not Allowed'
+      headers,
+      body: JSON.stringify({ error: 'Method Not Allowed' })
     };
   }
 
   try {
-    const data = JSON.parse(event.body);
-    console.log('Received request:', data);
+    // Validate API key
+    if (!GROQ_API_KEY) {
+      console.error('GROQ_API_KEY is not set');
+      throw new Error('API key not configured');
+    }
 
+    // Parse and validate request body
+    let data;
+    try {
+      data = JSON.parse(event.body);
+      if (!data.messages || !Array.isArray(data.messages)) {
+        throw new Error('Invalid request body: messages array is required');
+      }
+    } catch (e) {
+      console.error('Error parsing request body:', e);
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: 'Invalid request body' })
+      };
+    }
+
+    console.log('Making request to Groq API...');
     const response = await fetch(GROQ_API_URL, {
       method: 'POST',
       headers: {
@@ -35,12 +59,10 @@ exports.handler = async (event) => {
       },
       body: JSON.stringify({
         messages: data.messages,
-        model: "llama3-groq-70b-8192-tool-use-preview",
-        temperature: 0.8,
-        max_tokens: 8192,
+        model: "llama2-70b-4096",
+        temperature: 0.7,
+        max_tokens: 4096,
         top_p: 1,
-        presence_penalty: 0.2,
-        frequency_penalty: 0.3,
         stream: false
       })
     });
@@ -48,11 +70,22 @@ exports.handler = async (event) => {
     if (!response.ok) {
       const error = await response.json();
       console.error('Groq API error:', error);
-      throw new Error(error.error?.message || 'Failed to generate insights');
+      return {
+        statusCode: response.status,
+        headers,
+        body: JSON.stringify({ 
+          error: 'Failed to generate insights',
+          details: error.error?.message || 'Unknown error'
+        })
+      };
     }
 
     const result = await response.json();
-    console.log('Groq API response:', result);
+    console.log('Received response from Groq API');
+
+    if (!result.choices || !result.choices[0] || !result.choices[0].message) {
+      throw new Error('Invalid response from Groq API');
+    }
 
     // Clean and format the response
     let content = result.choices[0].message.content;
@@ -95,21 +128,18 @@ Powered by Cuan Check AI`;
 
     return {
       statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json'
-      },
+      headers,
       body: JSON.stringify({ data: formattedContent })
     };
   } catch (error) {
     console.error('Error processing request:', error);
     return {
       statusCode: 500,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ error: error.message })
+      headers,
+      body: JSON.stringify({ 
+        error: 'Internal server error',
+        message: error.message
+      })
     };
   }
 };
