@@ -4,10 +4,9 @@
 Cuan Check adalah aplikasi web SaaS untuk manajemen keuangan personal yang memudahkan pengguna melacak pemasukan dan pengeluaran mereka.
 
 ## Antarmuka Pengguna
-Aplikasi menggunakan Bahasa Indonesia secara menyeluruh dengan komponen UI modern dari Aceternity UI.
+Aplikasi menggunakan Bahasa Indonesia secara menyeluruh
 
 ### Tema dan Styling
-- Menggunakan Aceternity UI untuk komponen modern dan animasi
 - Desain minimalis dengan warna-warna lembut dan netral
 - Latar belakang menggunakan gradien halus dan efek glassmorphic
 - Kartu dan komponen menggunakan efek bayangan halus

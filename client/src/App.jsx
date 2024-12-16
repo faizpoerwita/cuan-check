@@ -11,10 +11,10 @@ function App() {
   return (
     <ThemeProvider>
       <Router>
-        <div className="relative min-h-full flex flex-col">
+        <div className="relative min-h-full flex flex-col bg-gray-50">
           <Navbar />
           
-          <main className="flex-1 flex items-start justify-center px-6 py-8 sm:px-8 lg:px-10">
+          <main className="flex-1 flex items-start justify-center px-6 py-8 sm:px-8 lg:px-10 bg-white">
             <div className="w-full max-w-6xl">
               <AnimatePresence mode="wait">
                 <Routes>
@@ -24,7 +24,7 @@ function App() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
                       transition={{ duration: 0.2 }}
-                      className="glassmorphic shadow-sm rounded-2xl"
+                      className="bg-white shadow-sm rounded-2xl"
                     >
                       <Dashboard />
                     </motion.div>
@@ -35,7 +35,7 @@ function App() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
                       transition={{ duration: 0.2 }}
-                      className="glassmorphic shadow-sm rounded-2xl"
+                      className="bg-white shadow-sm rounded-2xl"
                     >
                       <Transactions />
                     </motion.div>
@@ -46,7 +46,7 @@ function App() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
                       transition={{ duration: 0.2 }}
-                      className="glassmorphic shadow-sm rounded-2xl"
+                      className="bg-white shadow-sm rounded-2xl"
                     >
                       <Statistics />
                     </motion.div>
@@ -57,7 +57,7 @@ function App() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
                       transition={{ duration: 0.2 }}
-                      className="glassmorphic shadow-sm rounded-2xl"
+                      className="bg-white shadow-sm rounded-2xl"
                     >
                       <Settings />
                     </motion.div>

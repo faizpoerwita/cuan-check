@@ -620,8 +620,8 @@ const Dashboard = () => {
         <div className="flex flex-col gap-6">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-lg font-semibold tracking-tight">Analisis Keuangan AI</h2>
-              <p className="text-sm text-white/60 mt-1">
+              <h2 className="text-lg font-semibold tracking-tight text-gray-900">Analisis Keuangan AI</h2>
+              <p className="text-sm text-gray-600 mt-1">
                 Powered by Llama 3.2 - Analisis dan saran keuangan personal
               </p>
             </div>
@@ -630,8 +630,8 @@ const Dashboard = () => {
               disabled={aiInsights.loading}
               className={`px-4 py-2 rounded-lg text-sm transition-all flex items-center gap-2 ${
                 aiInsights.loading
-                  ? 'bg-white/10 cursor-not-allowed'
-                  : 'bg-white/20 hover:bg-white/30'
+                  ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                  : 'bg-blue-500 text-white hover:bg-blue-600'
               }`}
             >
               {aiInsights.loading ? (
@@ -681,7 +681,7 @@ const Dashboard = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="bg-gradient-to-br from-white via-white to-blue-50 rounded-2xl p-8 shadow-xl border border-blue-100/50 mb-6 overflow-auto max-h-[600px] backdrop-blur-sm"
+              className="bg-white rounded-2xl p-8 shadow-xl border border-gray-200 mb-6 overflow-auto max-h-[600px] text-gray-900"
             >
               {/* Copy and Share Bar */}
               <div className="flex items-center justify-between gap-4 mb-8 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 backdrop-blur-sm rounded-xl p-4 shadow-sm border border-blue-100/50">
@@ -727,80 +727,46 @@ const Dashboard = () => {
               </div>
 
               <div className="relative mb-8">
-                <h3 className="text-2xl font-serif font-bold text-gray-800 dark:text-white bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent relative z-10">
+                <h3 className="text-2xl font-serif font-bold text-gray-800 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent relative z-10">
                   Analisis Keuangan
                 </h3>
                 <div className="absolute -bottom-4 left-0 w-24 h-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"></div>
               </div>
 
-              <div className="prose dark:prose-invert max-w-none space-y-6">
+              <div className="space-y-6">
                 {aiInsights.data.split('\n').map((line, index) => {
                   if (!line.trim()) return null;
 
-                  // Process text content with different highlighting
+                  // Process text with proper styling
                   const processText = (text) => {
-                    // Remove any HTML-like tags
-                    text = text.replace(/<[^>]*>/g, '');
-                    
-                    // Split text into segments based on special patterns
                     const segments = [];
                     let currentIndex = 0;
-                    
-                    // Helper function to add a regular text segment
-                    const addTextSegment = (end) => {
-                      if (end > currentIndex) {
+
+                    // Add text segment
+                    const addTextSegment = (endIndex) => {
+                      if (endIndex > currentIndex) {
                         segments.push({
                           type: 'text',
-                          content: text.slice(currentIndex, end)
+                          content: text.slice(currentIndex, endIndex)
                         });
                       }
                     };
 
-                    // Find all special patterns
-                    const patterns = [
-                      {
-                        regex: /(Rp\.?\s*\d{1,3}(?:\.\d{3})*(?:,\d+)?)/g,
-                        type: 'currency'
-                      },
-                      {
-                        regex: /([-+]?\d*[.,]?\d+%)/g,
-                        type: 'percentage'
-                      },
-                      {
-                        regex: /(PENTING|PERHATIAN|REKOMENDASI|PRIORITAS):/g,
-                        type: 'keyword'
-                      },
-                      {
-                        regex: /(?<![Rp.%\d])\d{1,3}(?:\.\d{3})*(?:,\d+)?(?![%])/g,
-                        type: 'number'
-                      }
-                    ];
+                    // Find and process special segments
+                    const matches = [
+                      ...text.matchAll(/Rp\s*\d+(\.\d{3})*(\,\d+)?/g), // Currency
+                      ...text.matchAll(/\d+(\.\d+)?%/g), // Percentages
+                      ...text.matchAll(/\b\d+(\.\d+)?\b/g), // Numbers
+                    ].sort((a, b) => a.index - b.index);
 
-                    // Find all matches and their positions
-                    const matches = [];
-                    patterns.forEach(pattern => {
-                      let match;
-                      while ((match = pattern.regex.exec(text)) !== null) {
-                        matches.push({
-                          start: match.index,
-                          end: match.index + match[0].length,
-                          content: match[0],
-                          type: pattern.type
-                        });
-                      }
-                    });
-
-                    // Sort matches by start position
-                    matches.sort((a, b) => a.start - b.start);
-
-                    // Process matches and build segments
                     matches.forEach(match => {
-                      addTextSegment(match.start);
+                      addTextSegment(match.index);
                       segments.push({
-                        type: match.type,
-                        content: match.content
+                        type: match[0].includes('Rp') ? 'currency' :
+                              match[0].includes('%') ? 'percentage' : 'number',
+                        content: match[0]
                       });
-                      currentIndex = match.end;
+                      currentIndex = match.index + match[0].length;
                     });
 
                     // Add remaining text
@@ -811,7 +777,7 @@ const Dashboard = () => {
                       switch (segment.type) {
                         case 'currency':
                           return (
-                            <span key={i} className="text-blue-700 font-semibold bg-blue-50/80 px-2 py-0.5 rounded-md">
+                            <span key={i} className="text-blue-700 font-semibold bg-blue-50 px-1 rounded">
                               {segment.content}
                             </span>
                           );
@@ -819,25 +785,19 @@ const Dashboard = () => {
                           const isNegative = segment.content.startsWith('-');
                           return (
                             <span key={i} className={`${
-                              isNegative ? 'text-red-600 bg-red-50/80' : 'text-emerald-600 bg-emerald-50/80'
-                            } font-medium px-2 py-0.5 rounded-md`}>
-                              {segment.content}
-                            </span>
-                          );
-                        case 'keyword':
-                          return (
-                            <span key={i} className="text-indigo-600 bg-indigo-50/80 px-2 py-0.5 rounded-md font-medium">
+                              isNegative ? 'text-red-600 bg-red-50' : 'text-emerald-600 bg-emerald-50'
+                            } font-medium px-1 rounded`}>
                               {segment.content}
                             </span>
                           );
                         case 'number':
                           return (
-                            <span key={i} className="text-gray-700 font-medium bg-gray-50/80 px-1 rounded">
+                            <span key={i} className="text-gray-700 font-medium">
                               {segment.content}
                             </span>
                           );
                         default:
-                          return <span key={i}>{segment.content}</span>;
+                          return <span key={i} className="text-gray-800">{segment.content}</span>;
                       }
                     });
                   };
@@ -846,129 +806,22 @@ const Dashboard = () => {
                   if (/^\d+\./.test(line)) {
                     const [number, ...titleParts] = line.split(' ');
                     const title = titleParts.join(' ');
-                    const emoji = title.match(/[📊💰🎯💡📈]/)?.[0] || '';
                     
                     return (
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.5, delay: index * 0.1 }}
-                        key={index}
-                        className="relative"
-                      >
-                        <div className="flex items-center gap-3 mb-6">
-                          <span className="text-4xl opacity-90">{emoji}</span>
-                          <h2 className="text-2xl font-serif font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-                            {number} {title}
-                          </h2>
-                        </div>
-                        <div className="absolute bottom-0 left-0 w-32 h-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"></div>
-                      </motion.div>
-                    );
-                  }
-
-                  // Subsections (▸)
-                  if (line.includes('▸')) {
-                    const [title, ...content] = line.split(':');
-                    return (
-                      <motion.div
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.5, delay: index * 0.1 }}
-                        key={index}
-                        className="mt-6 mb-4"
-                      >
-                        <h3 className="text-lg font-serif font-semibold text-gray-700 pl-4 border-l-4 border-indigo-300 bg-gradient-to-r from-indigo-50/50 to-transparent py-2 flex items-center gap-2">
-                          <span className="text-indigo-500">{title.trim()}</span>
-                          {content.length > 0 && (
-                            <span className="text-gray-600 font-normal">
-                              {processText(content.join(':').trim())}
-                            </span>
-                          )}
+                      <div key={index} className="mb-6">
+                        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                          {number} {title}
                         </h3>
-                      </motion.div>
-                    );
-                  }
-
-                  // Status indicators (SEHAT/PERHATIAN/KRITIS)
-                  if (/\[(SEHAT|PERHATIAN|KRITIS)\]/.test(line)) {
-                    const status = line.match(/\[(SEHAT|PERHATIAN|KRITIS)\]/)[1];
-                    const statusColors = {
-                      SEHAT: 'text-emerald-600 bg-emerald-50/80',
-                      PERHATIAN: 'text-amber-600 bg-amber-50/80',
-                      KRITIS: 'text-red-600 bg-red-50/80'
-                    };
-                    
-                    return (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.5, delay: index * 0.1 }}
-                        key={index}
-                        className="ml-6 my-2"
-                      >
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusColors[status]}`}>
-                          {status === 'SEHAT' && '✓'}
-                          {status === 'PERHATIAN' && '⚠️'}
-                          {status === 'KRITIS' && '⚡'}
-                          <span className="ml-1">{status}</span>
-                        </span>
-                        <span className="ml-3 text-gray-600">
-                          {processText(line.replace(/\[.*?\]/g, '').trim())}
-                        </span>
-                      </motion.div>
-                    );
-                  }
-
-                  // Bullet points (•)
-                  if (line.startsWith('•')) {
-                    return (
-                      <motion.div
-                        initial={{ opacity: 0, x: -5 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.5, delay: index * 0.1 }}
-                        key={index}
-                        className="flex items-start gap-3 ml-6 group hover:bg-gray-50/50 rounded-lg p-2 transition-all duration-200"
-                      >
-                        <span className="text-indigo-400 mt-1 text-lg group-hover:text-indigo-500 transition-colors duration-200">•</span>
-                        <p className="text-gray-600 font-serif leading-relaxed flex-1">
-                          {processText(line.substring(1).trim())}
-                        </p>
-                      </motion.div>
-                    );
-                  }
-
-                  // Numbered items (1. 2. 3. inside sections)
-                  if (/^\d+\.\s/.test(line) && !line.includes('📊')) {
-                    return (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.5, delay: index * 0.1 }}
-                        key={index}
-                        className="flex items-start gap-3 ml-6 group hover:bg-gray-50/50 rounded-lg p-2 transition-all duration-200"
-                      >
-                        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 text-sm font-medium">
-                          {line.split('.')[0]}
-                        </span>
-                        <p className="text-gray-600 font-serif leading-relaxed flex-1">
-                          {processText(line.substring(line.indexOf('.') + 1).trim())}
-                        </p>
-                      </motion.div>
+                        <div className="h-1 w-24 bg-blue-500 rounded-full"></div>
+                      </div>
                     );
                   }
 
                   // Regular paragraphs
                   return (
-                    <motion.p
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.5, delay: index * 0.1 }}
-                      key={index}
-                      className="text-gray-600 font-serif leading-relaxed ml-6 hover:bg-gray-50/50 rounded-lg p-2 transition-all duration-200"
-                    >
+                    <p key={index} className="text-gray-800 leading-relaxed">
                       {processText(line)}
-                    </motion.p>
+                    </p>
                   );
                 })}
               </div>

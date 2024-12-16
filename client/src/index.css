@@ -72,18 +72,16 @@
 
 @layer base {
   * {
-    @apply border-zinc-100/50 dark:border-zinc-800;
+    @apply border-gray-200;
   }
   body {
-    @apply text-foreground antialiased;
-    background: 
-      radial-gradient(circle at 0% 0%, rgba(147, 197, 253, 0.15) 0%, transparent 50%),
-      radial-gradient(circle at 100% 0%, rgba(167, 139, 250, 0.15) 0%, transparent 50%),
-      radial-gradient(circle at 100% 100%, rgba(249, 168, 212, 0.15) 0%, transparent 50%),
-      radial-gradient(circle at 0% 100%, rgba(147, 197, 253, 0.15) 0%, transparent 50%),
-      linear-gradient(180deg, rgb(248, 250, 255) 0%, rgb(240, 245, 255) 100%);
-    background-attachment: fixed;
-    min-height: 100vh;
+    @apply bg-background text-gray-900;
+  }
+  input, select, textarea {
+    @apply text-gray-900;
+  }
+  label {
+    @apply text-gray-900 font-medium;
   }
   html, body, #root {
     @apply h-full;
@@ -92,18 +90,11 @@
 
 @layer components {
   .glassmorphic {
-    background: rgba(255, 255, 255, 0.65);
-    backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.8);
-    box-shadow: 
-      0 8px 32px -4px rgba(0, 0, 0, 0.05),
-      0 4px 16px -2px rgba(0, 0, 0, 0.02),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.4);
-    transition: all 0.3s ease-in-out;
+    @apply bg-white/80 backdrop-blur-lg border border-white/20;
   }
 
   .glassmorphic:hover {
-    background: rgba(255, 255, 255, 0.75);
+    @apply bg-white/90;
     transform: translateY(-2px);
     box-shadow: 
       0 12px 36px -4px rgba(0, 0, 0, 0.08),
@@ -192,7 +183,7 @@
 select, input {
   @apply bg-white/50 border border-gray-200 rounded-lg px-3 py-2 
     focus:outline-none focus:ring-2 focus:ring-blue-500/20
-    transition-all duration-200;
+    transition-all duration-200 text-gray-900;
 }
 
 select:hover, input:hover {
@@ -201,7 +192,7 @@ select:hover, input:hover {
 
 /* Typography enhancements */
 h1, h2, h3, h4, h5, h6 {
-  @apply tracking-tight;
+  @apply tracking-tight text-gray-900;
 }
 
 /* Button styles */
