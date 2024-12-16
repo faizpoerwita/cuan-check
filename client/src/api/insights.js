@@ -91,7 +91,7 @@ Analisis harus mempertimbangkan semua aspek data yang diberikan dan memberikan w
     }
 
     const result = await response.json();
-    return result;
+    return result.data; // Return just the data string
   } catch (error) {
     console.error('Error generating insights:', error);
     throw error;

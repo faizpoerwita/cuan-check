@@ -54,15 +54,6 @@ exports.handler = async (event) => {
     const result = await response.json();
     console.log('Groq API response:', result);
 
-    // Helper functions for formatting
-    function formatCurrency(amount) {
-      return `Rp ${new Intl.NumberFormat('id-ID').format(amount)}`;
-    }
-
-    function formatPercentage(value) {
-      return value.toFixed(1).replace('.', ',').replace(/\s+/g, '') + '%';
-    }
-
     // Clean and format the response
     let content = result.choices[0].message.content;
     
@@ -82,16 +73,16 @@ exports.handler = async (event) => {
         if (match.length === 4 && parseInt(match) >= 1900 && parseInt(match) <= 2100) {
           return match;
         }
-        return formatCurrency(parseInt(match));
+        return `Rp ${new Intl.NumberFormat('id-ID').format(parseInt(match))}`;
       })
       .replace(/(\d+(?:[.,]\d+)?)\s*%/g, match => {
         const num = parseFloat(match.replace(/[^\d.-]/g, '.'));
-        return formatPercentage(num);
+        return `${num.toFixed(1).replace('.', ',').replace(/\s+/g, '')}%`;
       })
       .replace(/(\b\d[\d\.,]*\b)\s+\1/g, '$1');
 
     // Add formatting and spacing
-    content = `${content.trim()}
+    const formattedContent = `${content.trim()}
 
 ──────────────────────────
 ${new Date().toLocaleDateString('id-ID', {
@@ -108,7 +99,7 @@ Powered by Cuan Check AI`;
         'Access-Control-Allow-Origin': '*',
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ data: content })
+      body: JSON.stringify({ data: formattedContent })
     };
   } catch (error) {
     console.error('Error processing request:', error);
