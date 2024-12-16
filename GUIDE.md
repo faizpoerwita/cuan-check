@@ -118,6 +118,33 @@ Aplikasi menggunakan Bahasa Indonesia secara menyeluruh
    npm run dev
    ```
 
+### Local Development
+
+### Prerequisites
+1. Node.js and npm installed
+2. Netlify CLI installed globally (`npm install -g netlify-cli`)
+3. Environment variables set up (see Environment Variables section)
+
+### Running the Development Server
+You can start the development server in two ways:
+
+1. Using the batch file:
+   - Simply double-click `start-dev.bat` in the project root
+   - This will start both the Vite dev server and Netlify Functions
+
+2. Manually:
+   ```bash
+   netlify dev
+   ```
+
+The app will be available at http://localhost:8888
+
+### Environment Variables for Local Development
+Create a `.env` file in the project root with these variables:
+```
+GROQ_API_KEY=your_groq_api_key_here
+```
+
 ### Deployment
 1. Push ke GitHub
 2. Netlify akan otomatis mendeploy perubahan
