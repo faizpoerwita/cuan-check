@@ -11,7 +11,24 @@ const __dirname = dirname(__filename);
 const app = express();
 const port = process.env.PORT || 3001;
 
-app.use(cors());
+// Configure CORS to only allow requests from your Netlify domain
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3001',
+  'https://cuan-check.netlify.app', // Add your Netlify domain here
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+}));
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'client/build')));
 
@@ -21,8 +38,8 @@ app.use((req, res, next) => {
   next();
 });
 
-const GROQ_API_KEY = "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";
-const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
+const GROQ_API_KEY = process.env.GROQ_API_KEY || "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";
+const GROQ_API_URL = process.env.GROQ_API_URL || "https://api.groq.com/openai/v1/chat/completions";
 
 app.post('/api/insights', async (req, res) => {
   try {

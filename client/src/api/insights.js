@@ -1,5 +1,6 @@
-const API_KEY = "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";
-const API_URL = "https://api.groq.com/openai/v1/chat/completions";
+const API_KEY = import.meta.env.VITE_API_KEY || "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";
+const API_URL = import.meta.env.VITE_API_URL || "https://api.groq.com/openai/v1/chat/completions";
+const BASE_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
 
 export const getFinancialInsights = async (data) => {
   try {
@@ -98,7 +99,7 @@ Analisis harus mempertimbangkan semua aspek data yang diberikan dan memberikan w
 
     const messages = [systemMessage];
 
-    const response = await fetch('http://localhost:3001/api/insights', {
+    const response = await fetch(`${BASE_URL}/api/insights`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
