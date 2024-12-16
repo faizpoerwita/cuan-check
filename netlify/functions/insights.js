@@ -59,10 +59,12 @@ exports.handler = async (event) => {
       },
       body: JSON.stringify({
         messages: data.messages,
-        model: "llama2-70b-4096",
-        temperature: 0.7,
-        max_tokens: 4096,
+        model: "llama3-groq-70b-8192-tool-use-preview",
+        temperature: 0.8,
+        max_tokens: 8192,
         top_p: 1,
+        presence_penalty: 0.2,
+        frequency_penalty: 0.3,
         stream: false
       })
     });
