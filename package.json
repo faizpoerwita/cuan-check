@@ -3,15 +3,9 @@
   "version": "1.0.0",
   "description": "Financial insights app",
   "scripts": {
-    "dev": "npm run dev --prefix client",
-    "build": "npm run build --prefix client",
-    "install-client": "cd client && npm install",
-    "postinstall": "npm run install-client",
-    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "build": "cd client && npm install && npm run build",
+    "dev": "cd client && npm run dev"
   },
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "node-fetch": "^2.7.0"
   },
