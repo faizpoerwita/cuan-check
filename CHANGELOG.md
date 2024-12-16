@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2024-12-16
+
+### Added
+- Netlify Functions integration for serverless backend
+- AI-powered financial insights using Groq API
+- Consistent response formatting with Indonesian currency and percentage
+
+### Changed
+- Migrated from Express.js server to Netlify Functions
+- Updated build configuration for Netlify deployment
+- Simplified project structure for better maintainability
+
+### Fixed
+- CORS issues with API requests
+- Response format handling in client
+- Build and deployment configuration
+- Dependencies installation in Netlify
+
 ## [0.2.3] - 2024-12-16
 
 ### Changed

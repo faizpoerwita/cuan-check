@@ -3,6 +3,52 @@
 ## Deskripsi
 Cuan Check adalah aplikasi web SaaS untuk manajemen keuangan personal yang memudahkan pengguna melacak pemasukan dan pengeluaran mereka.
 
+## Teknologi
+
+### Frontend
+- React dengan Vite
+- Tailwind CSS untuk styling
+- React Router untuk navigasi
+- Chart.js untuk visualisasi data
+
+### Backend
+- Netlify Functions untuk serverless backend
+- Groq API untuk analisis keuangan AI
+- Node-fetch untuk HTTP requests
+
+## Konfigurasi
+
+### Environment Variables
+1. Frontend (`.env.production`):
+```env
+VITE_API_URL=https://api.groq.com/openai/v1/chat/completions
+VITE_SERVER_URL=/.netlify/functions
+VITE_API_KEY=your-groq-api-key
+```
+
+2. Netlify Functions:
+```env
+GROQ_API_KEY=your-groq-api-key
+```
+
+### Netlify Configuration
+File `netlify.toml`:
+```toml
+[build]
+  command = "cd client && npm install && npm run build"
+  publish = "client/dist"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+  included_files = ["package.json"]
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+```
+
 ## Antarmuka Pengguna
 Aplikasi menggunakan Bahasa Indonesia secara menyeluruh
 
@@ -19,12 +65,7 @@ Aplikasi menggunakan Bahasa Indonesia secara menyeluruh
 - Kartu dengan efek hover 3D yang halus
 - Tombol dengan animasi hover dan klik
 - Input field dengan validasi dan feedback visual
-- Navigasi responsif dengan menu mobile modern:
-  - Kartu navigasi dengan ikon dan teks
-  - Indikator aktif dengan gradien dan bayangan
-  - Animasi halus untuk hover dan tap
-  - Tombol menu yang selaras dengan desain
-  - Transisi mulus untuk membuka/tutup menu
+- Navigasi responsif dengan menu mobile modern
 - Loading state dan skeleton untuk pengalaman yang mulus
 - Toast notifications untuk feedback sistem
 
@@ -35,324 +76,58 @@ Aplikasi menggunakan Bahasa Indonesia secara menyeluruh
 - Spacing yang konsisten menggunakan rem unit
 - Grid dan flexbox untuk layout yang fleksibel
 
-### Aksesibilitas
-- Kontras warna yang memenuhi standar WCAG
-- Markup semantik untuk screen reader
-- Focus state yang jelas untuk navigasi keyboard
-- Aria labels untuk elemen interaktif
-- Pesan error yang deskriptif
-
 ## Fitur Utama
 
 ### 1. Dashboard Utama
-**Tujuan**: Memberikan gambaran umum status keuangan.
+- Ringkasan keuangan (pemasukan, pengeluaran, saldo)
+- Grafik visual (diagram lingkaran dan batang)
+- Sorotan kategori pengeluaran
 
-**Konten**:
-- Ringkasan Keuangan:
-  - Total pemasukan
-  - Total pengeluaran
-  - Saldo bersih (pemasukan - pengeluaran)
-- Grafik Visual:
-  - Diagram Lingkaran: Proporsi pengeluaran per kategori
-  - Diagram Batang: Tren bulanan pemasukan dan pengeluaran
-- Sorotan:
-  - Kategori pengeluaran terbesar
-  - Persentase pengeluaran dibanding pemasukan
+### 2. Analisis AI
+- Analisis mendalam pola keuangan
+- Rekomendasi optimasi keuangan
+- Proyeksi pertumbuhan keuangan
+- Format respons yang konsisten dengan:
+  - Pembersihan kode dan markup
+  - Format mata uang Indonesia
+  - Format persentase
+  - Timestamp dan branding
 
-### 2. Halaman Transaksi
-**Tujuan**: Menampilkan dan mengelola transaksi keuangan secara detail.
+### 3. Manajemen Transaksi
+- Input transaksi dengan validasi
+- Kategorisasi otomatis
+- Riwayat transaksi
+- Filter dan pencarian
 
-**Konten**:
-- Tabel Transaksi:
-  - Kolom: Tanggal, Kategori, Deskripsi, Jumlah
-  - Aksi: Edit dan Hapus
-- Pencarian dan Filter:
-  - Filter berdasarkan tanggal, kategori, atau jenis
-  - Pengurutan data
+### 4. Ekspor Data
+- Format Excel/CSV
+- Pilihan data untuk ekspor
 
-### 3. Tambah Transaksi Baru
-**Tujuan**: Input manual data pemasukan atau pengeluaran.
+## Development Guide
 
-**Form**:
-- Tanggal (dengan date picker modern)
-- Kategori (dropdown dengan animasi)
-- Deskripsi (opsional)
-- Jumlah (dengan format Rupiah otomatis)
-- Tombol Simpan dengan efek hover
-
-### 4. Halaman Statistik
-**Tujuan**: Analisis keuangan detail.
-
-**Konten**:
-- Statistik Bulanan
-- Statistik Tahunan
-- Wawasan Keuangan
-
-### 5. Ekspor Data
-**Tujuan**: Menyimpan atau berbagi data keuangan.
-
-**Opsi**:
-- Format: Excel/CSV
-- Pilihan data
-
-### 6. Pengaturan Pengguna
-**Tujuan**: Kustomisasi pengalaman pengguna.
-
-**Konten**:
-- Manajemen Kategori
-- Pengaturan Bahasa
-- Pengaturan Akun
-
-### 7. Fitur Analisis Keuangan AI
-
-### Mendapatkan Analisis
-1. Klik tombol "Analisis Keuangan" untuk mendapatkan analisis berdasarkan data keuangan Anda
-2. Tunggu beberapa saat hingga analisis selesai dihasilkan
-3. Analisis akan mencakup:
-   - Kesehatan keuangan secara umum
-   - Pola pengeluaran
-   - Rekomendasi penghematan
-   - Strategi mencapai target
-   - Tips tambahan
-
-### Berbagi Analisis
-1. **Salin Analisis**
-   - Klik tombol "Salin Analisis" untuk menyalin seluruh teks analisis ke clipboard
-   - Akan muncul notifikasi "Tersalin!" jika berhasil
-   - Teks yang disalin bisa langsung di-paste ke aplikasi lain
-
-2. **Berbagi ke Media Sosial**
-   - Klik ikon WhatsApp untuk membagikan ke WhatsApp
-   - Klik ikon Telegram untuk membagikan ke Telegram
-   - Konten yang dibagikan akan mencakup:
-     - Judul "Analisis Keuangan dari Cuan Check"
-     - Hasil analisis lengkap
-     - Link ke aplikasi
-
-3. **Format Teks**
-   - Teks analisis akan diformat dengan rapi
-   - Menggunakan poin-poin dan penomoran yang jelas
-   - Mudah dibaca di berbagai platform
-
-## Layout Guidelines
-
-### Root Layout
-- Use `h-full` and `overflow-hidden` at root level (html, body, #root)
-- Main container should use `flex flex-col` for proper height distribution
-- Content area should have `overflow-auto` for scrolling when needed
-
-### Dashboard Layout
-- Use fixed heights for chart sections to prevent layout shifts
-- Keep padding and margins minimal (p-3, gap-3)
-- Use smaller font sizes for better space efficiency
-- Optimize chart legends and labels for compact display
-
-### Responsive Design
-- Mobile-first approach with progressive enhancement
-- Use grid system with proper breakpoints (sm, lg)
-- Adjust font sizes and spacing based on screen size
-- Charts should maintain aspect ratio while fitting available space
-
-### Best Practices
-- Always use flex-1 with min-h-0 for flexible height containers
-- Maintain consistent spacing throughout the application
-- Use relative units where possible
-- Consider content overflow in all components
-
-## Design Guidelines for Cuan Check
-
-### Color Palette
-
-#### Primary Colors
-- Background: `rgb(240, 245, 255)` - Light blue base
-- Card Background: `rgba(255, 255, 255, 0.8)` with backdrop-filter blur
-- Primary Blue: `rgb(64, 123, 255)` - Active states & CTAs
-- Text Primary: `rgb(23, 23, 23)`
-- Text Secondary: `rgb(107, 114, 128)`
-
-#### Accent Colors
-- Success: `rgb(34, 197, 94)` - Positive trends
-- Danger: `rgb(239, 68, 68)` - Negative trends
-- Warning: `rgb(234, 179, 8)` - Warning states
-
-### Typography
-
-#### Font Hierarchy
-- Headings: Inter, 24px/1.5, font-weight: 600
-- Subheadings: Inter, 18px/1.5, font-weight: 500
-- Body: Inter, 14px/1.5, font-weight: 400
-- Small Text: Inter, 12px/1.5, font-weight: 400
-
-### Components
-
-#### Cards
-- Background: `rgba(255, 255, 255, 0.8)`
-- Backdrop Filter: `blur(12px)`
-- Border: `1px solid rgba(255, 255, 255, 0.5)`
-- Border Radius: `16px`
-- Box Shadow: `0 4px 24px rgba(0, 0, 0, 0.03)`
-
-#### Buttons
-- Border Radius: `12px`
-- Padding: `8px 16px`
-- Height: `40px`
-- Transition: `all 0.2s ease-in-out`
-
-#### Charts
-- Use soft, pastel colors
-- Apply subtle gradients
-- Include hover states
-- Maintain consistent spacing
-
-### Layout
-
-#### Spacing
-- Base Unit: `4px`
-- Card Padding: `24px`
-- Grid Gap: `24px`
-- Section Margin: `32px`
-
-#### Grid System
-- Use CSS Grid for layout
-- Responsive breakpoints:
-  - Mobile: < 640px
-  - Tablet: 640px - 1024px
-  - Desktop: > 1024px
-
-### Effects
-
-#### Glassmorphism
-- Background: `rgba(255, 255, 255, 0.8)`
-- Backdrop Filter: `blur(12px)`
-- Border: `1px solid rgba(255, 255, 255, 0.5)`
-
-#### Animations
-- Use `framer-motion` for transitions
-- Keep animations subtle and smooth
-- Duration: 0.2s - 0.4s
-- Easing: ease-in-out
-
-### Best Practices
-
-1. Maintain consistent spacing
-2. Use glassmorphism effects judiciously
-3. Keep animations subtle
-4. Ensure high contrast for text
-5. Make interactive elements obvious
-6. Use shadows to create depth
-7. Apply consistent border radius
-
-## Teknologi
-
-### Frontend
-- React.js dengan Vite
-- Aceternity UI untuk komponen modern
-- Tailwind CSS untuk styling
-- Framer Motion untuk animasi
-- Chart.js untuk visualisasi data
-- React Router untuk navigasi
-- Axios untuk HTTP requests
-
-### Backend
-- Node.js dengan Express.js
-- MongoDB untuk database
+### Setup Lokal
+1. Clone repository
+2. Install dependencies:
+   ```bash
+   npm install
+   cd client && npm install
+   ```
+3. Setup environment variables
+4. Run development server:
+   ```bash
+   npm run dev
+   ```
 
 ### Deployment
-- Frontend: Netlify
-- Database: MongoDB Atlas
+1. Push ke GitHub
+2. Netlify akan otomatis mendeploy perubahan
+3. Pastikan environment variables sudah dikonfigurasi di Netlify
 
-## Struktur Proyek
-
-```
-cuan-check/
-├── client/             # Frontend React application
-│   ├── src/
-│   │   ├── components/ # Komponen UI yang dapat digunakan kembali
-│   │   ├── pages/     # Halaman utama aplikasi
-│   │   ├── utils/     # Fungsi utilitas
-│   │   └── styles/    # Style dan tema
-│   ├── public/        # File statis
-│   └── dist/          # Build produksi
-├── GUIDE.md           # Dokumentasi fitur aplikasi
-└── README.md          # Dokumentasi setup
-```
-
-## Terjemahan UI
-
-### Navigasi
-- Dashboard = Dashboard
-- Transactions = Transaksi
-- Statistics = Statistik
-- Settings = Pengaturan
-
-### Tombol dan Aksi
-- Add = Tambah
-- Edit = Ubah
-- Delete = Hapus
-- Save = Simpan
-- Cancel = Batal
-- Export = Ekspor
-- Import = Impor
-
-### Label Form
-- Date = Tanggal
-- Category = Kategori
-- Description = Deskripsi
-- Amount = Jumlah
-- Type = Jenis
-- Income = Pemasukan
-- Expense = Pengeluaran
-
-### Pesan
-- Success = Berhasil
-- Error = Gagal
-- Loading = Memuat
-- No Data = Data Kosong
-- Confirm Delete = Konfirmasi Hapus
-
-## Stack Teknologi
-
-### Backend
-- Node.js dengan Express.js
-- MongoDB
-
-### Frontend
-- React.js
-- Tailwind CSS
-
-### Visualisasi
-- Chart.js
-
-### Deployment
-- Platform: Vercel/AWS
-- Database: MongoDB Atlas
-
-## Struktur Database
-
-### Collection: transactions
-- _id
-- date
-- category
-- description
-- amount
-- type
-
-### Collection: categories
-- _id
-- name
-- type
-
-### Collection: users
-- _id
-- username
-- email
-- preferences
-
-## Alur Pengguna
-1. Login (Opsional)
-2. Dashboard
-3. Halaman Transaksi
-4. Tambah Transaksi
-5. Statistik
-6. Ekspor Data
-7. Pengaturan
+### Best Practices
+- Gunakan TypeScript untuk type safety
+- Ikuti konvensi penamaan yang konsisten
+- Dokumentasikan perubahan di CHANGELOG.md
+- Test fitur sebelum deploy
+- Gunakan error handling yang proper
+- Validasi input user
+- Maintain kode yang bersih dan terorganisir
