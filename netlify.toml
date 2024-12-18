@@ -5,7 +5,17 @@
 
 [functions]
   node_bundler = "esbuild"
-  included_files = ["package.json"]
+  included_files = ["package.json", ".env"]
+  external_node_modules = ["node-fetch", "dotenv"]
+
+[dev]
+  framework = "vite"
+  command = "npm run dev"
+  targetPort = 3000
+  port = 8888
+  publish = "client/dist"
+  autoLaunch = true
+  functionsPort = 9999
 
 [[redirects]]
   from = "/*"

@@ -55,6 +55,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added page transition animations
 - Improved overall UI consistency in both light and dark modes
 
+## [0.2.1] - 2024-12-18
+
+### Changed
+- Enhanced AI insights formatting and response handling
+- Improved text readability in the Dashboard UI
+- Updated system message format for better AI analysis
+- Fixed section parsing in financial insights
+- Optimized error handling in API responses
+
 ## [0.2.1] - 2024-12-16
 
 ### Changed
@@ -64,7 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added 3D card effect to settings page
 - Updated theme toggle with animated sun/moon icons
 
-## [0.2.0] - 2024-12-16
+## [0.2.0] - 2024-12-17
 
 ### Changed
 - Enhanced glassmorphic UI design with improved transparency and depth effects

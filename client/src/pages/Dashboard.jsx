@@ -16,6 +16,9 @@ import { formatCurrency } from '../utils/format';
 import { getFinancialInsights } from '../api/insights';
 import { WhatsappShareButton, WhatsappIcon, TelegramShareButton, TelegramIcon } from 'react-share';
 import AnimatedText from '../components/AnimatedText';
+import { processTextSegments, processMarkdownFormatting, getSegmentClasses } from '../utils/textProcessing';
+import { processContent, extractFinancialMetrics, generateVisualizationData } from '../utils/insightProcessing';
+import { Doughnut, Bar } from 'react-chartjs-2';
 
 ChartJS.register(
   CategoryScale,
@@ -219,10 +222,14 @@ const Dashboard = () => {
     ]
   });
 
+  useEffect(() => {
+    console.log('Current calculatorData:', calculatorData);
+  }, [calculatorData]);
+
   const [aiInsights, setAiInsights] = useState({
     loading: false,
-    error: null,
-    data: null
+    data: null,
+    error: null
   });
 
   const [showCopySuccess, setShowCopySuccess] = useState(false);
@@ -368,19 +375,53 @@ const Dashboard = () => {
   };
 
   const generateInsights = async () => {
-    setAiInsights({ loading: true, data: null, error: null });
+    setAiInsights({
+      loading: true,
+      data: null,
+      error: null
+    });
     try {
-      const result = await getFinancialInsights({
-        transactions: calculatorData.pengeluaranBulanan,
-        categories: [],
-        totalIncome: calculatorData.gaji,
-        totalExpenses: totalPengeluaran,
-        balance: calculatorData.gaji - totalPengeluaran,
-        monthlyData: chartData
-      });
+      // Check if we have any expenses with non-zero amounts
+      const hasValidExpenses = calculatorData.pengeluaranBulanan.some(item => item.amount > 0);
+      
+      if (!hasValidExpenses) {
+        throw new Error('Mohon masukkan setidaknya satu pengeluaran dengan nilai lebih dari 0.');
+      }
+
+      const data = {
+        income: calculatorData.gaji,
+        expenses: calculatorData.pengeluaranBulanan.reduce((acc, item) => {
+          if (item.amount > 0) {  // Only include non-zero expenses
+            acc[item.label] = item.amount;
+          }
+          return acc;
+        }, {}),
+        currentAge: calculatorData.usiaSaatIni,
+        retirementAge: calculatorData.targetPensiun,
+        target1Year: calculatorData.targetTabungan1Tahun,
+        target2Year: calculatorData.targetTabungan2Tahun
+      };
+      
+      console.log('Data being sent to getFinancialInsights:', data);
+      const result = await getFinancialInsights(data);
+      
+      console.log('Received insights result:', result);
+      
+      // Format the insights data for display
+      const formattedInsights = {
+        status: result.status,
+        expenses: result.expenses,
+        risk: result.risk,
+        recommendations: result.recommendations,
+        aiAnalysis: result.aiAnalysis,
+        summary: result.summary
+      };
+      
+      console.log('Formatted insights:', formattedInsights);
+      
       setAiInsights({ 
         loading: false, 
-        data: result, 
+        data: formattedInsights, 
         error: null 
       });
     } catch (error) {
@@ -391,6 +432,13 @@ const Dashboard = () => {
         error: 'Gagal mendapatkan analisis. Silakan coba lagi.' 
       });
     }
+  };
+
+  const [showAIAnalysis, setShowAIAnalysis] = useState(false);
+
+  const handleAnalyze = async () => {
+    setShowAIAnalysis(true);
+    await generateInsights();
   };
 
   return (
@@ -620,13 +668,13 @@ const Dashboard = () => {
         <div className="flex flex-col gap-6">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-lg font-semibold tracking-tight text-gray-900">Analisis Keuangan AI</h2>
+              <h2 className="text-lg font-semibold tracking-tight">Analisis Keuangan AI</h2>
               <p className="text-sm text-gray-600 mt-1">
-                Powered by Llama 3.2 - Analisis dan saran keuangan personal
+                Analisis dan saran keuangan personal
               </p>
             </div>
             <button
-              onClick={generateInsights}
+              onClick={handleAnalyze}
               disabled={aiInsights.loading}
               className={`px-4 py-2 rounded-lg text-sm transition-all flex items-center gap-2 ${
                 aiInsights.loading
@@ -676,180 +724,259 @@ const Dashboard = () => {
             </div>
           )}
 
-          {aiInsights.data && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="bg-white rounded-2xl p-8 shadow-xl border border-gray-200 mb-6 overflow-auto max-h-[600px] text-gray-900"
-            >
-              {/* Copy and Share Bar */}
-              <div className="flex items-center justify-between gap-4 mb-8 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 backdrop-blur-sm rounded-xl p-4 shadow-sm border border-blue-100/50">
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleCopyInsights}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-700 bg-white/90 border border-indigo-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-200 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 shadow-sm"
-                  >
-                    {showCopySuccess ? (
-                      <>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                        </svg>
-                        <span className="font-serif italic">Tersalin!</span>
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                        </svg>
-                        <span className="font-serif">Salin Analisis</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-indigo-600 font-serif italic">Bagikan:</span>
-                  <WhatsappShareButton
-                    url={window.location.href}
-                    title={getShareableText()}
-                    className="transform hover:scale-105 transition-transform duration-200"
-                  >
-                    <WhatsappIcon size={32} round className="shadow-sm" />
-                  </WhatsappShareButton>
-                  <TelegramShareButton
-                    url={window.location.href}
-                    title={getShareableText()}
-                    className="transform hover:scale-105 transition-transform duration-200"
-                  >
-                    <TelegramIcon size={32} round className="shadow-sm" />
-                  </TelegramShareButton>
-                </div>
-              </div>
-
-              <div className="relative mb-8">
-                <h3 className="text-2xl font-serif font-bold text-gray-800 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent relative z-10">
-                  Analisis Keuangan
-                </h3>
-                <div className="absolute -bottom-4 left-0 w-24 h-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"></div>
-              </div>
-
-              <div className="space-y-6">
-                {aiInsights.data.split('\n').map((line, index) => {
-                  if (!line.trim()) return null;
-
-                  // Process text with proper styling
-                  const processText = (text) => {
-                    const segments = [];
-                    let currentIndex = 0;
-
-                    // Add text segment
-                    const addTextSegment = (endIndex) => {
-                      if (endIndex > currentIndex) {
-                        segments.push({
-                          type: 'text',
-                          content: text.slice(currentIndex, endIndex)
-                        });
-                      }
-                    };
-
-                    // Find and process special segments
-                    const matches = [
-                      ...text.matchAll(/Rp\s*\d+(\.\d{3})*(\,\d+)?/g), // Currency
-                      ...text.matchAll(/\d+(\.\d+)?%/g), // Percentages
-                      ...text.matchAll(/\b\d+(\.\d+)?\b/g), // Numbers
-                    ].sort((a, b) => a.index - b.index);
-
-                    matches.forEach(match => {
-                      addTextSegment(match.index);
-                      segments.push({
-                        type: match[0].includes('Rp') ? 'currency' :
-                              match[0].includes('%') ? 'percentage' : 'number',
-                        content: match[0]
-                      });
-                      currentIndex = match.index + match[0].length;
-                    });
-
-                    // Add remaining text
-                    addTextSegment(text.length);
-
-                    // Render segments with appropriate styling
-                    return segments.map((segment, i) => {
-                      switch (segment.type) {
-                        case 'currency':
-                          return (
-                            <span key={i} className="text-blue-700 font-semibold bg-blue-50 px-1 rounded">
-                              {segment.content}
-                            </span>
-                          );
-                        case 'percentage':
-                          const isNegative = segment.content.startsWith('-');
-                          return (
-                            <span key={i} className={`${
-                              isNegative ? 'text-red-600 bg-red-50' : 'text-emerald-600 bg-emerald-50'
-                            } font-medium px-1 rounded`}>
-                              {segment.content}
-                            </span>
-                          );
-                        case 'number':
-                          return (
-                            <span key={i} className="text-gray-700 font-medium">
-                              {segment.content}
-                            </span>
-                          );
-                        default:
-                          return <span key={i} className="text-gray-800">{segment.content}</span>;
-                      }
-                    });
-                  };
-
-                  // Main sections (1. 2. 3. etc)
-                  if (/^\d+\./.test(line)) {
-                    const [number, ...titleParts] = line.split(' ');
-                    const title = titleParts.join(' ');
-                    
-                    return (
-                      <div key={index} className="mb-6">
-                        <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                          {number} {title}
-                        </h3>
-                        <div className="h-1 w-24 bg-blue-500 rounded-full"></div>
+          {aiInsights && aiInsights.data && (
+            <>
+              {(() => {
+                const metrics = extractFinancialMetrics(aiInsights.data);
+                const visualizations = generateVisualizationData(metrics);
+                
+                return (
+                  <div className="space-y-8">
+                    {/* Financial Health Score */}
+                    <div className="glassmorphic rounded-2xl p-6">
+                      <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-lg font-semibold">Skor Kesehatan Keuangan</h3>
+                        <span className={`px-4 py-1.5 rounded-full text-sm font-medium ${
+                          metrics.healthScore >= 66 ? 'bg-emerald-100 text-emerald-800' :
+                          metrics.healthScore >= 33 ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          Risiko {
+                            metrics.healthScore >= 66 ? 'Rendah' :
+                            metrics.healthScore >= 33 ? 'Sedang' : 'Tinggi'
+                          }
+                        </span>
                       </div>
-                    );
-                  }
+                      
+                      <div className="flex flex-col md:flex-row gap-8">
+                        {/* Gauge Chart */}
+                        <div className="relative w-48 h-48 flex-shrink-0 mx-auto md:mx-0">
+                          <div 
+                            className="absolute inset-0 rounded-full border-8 border-gray-100"
+                          ></div>
+                          <div 
+                            className="absolute inset-0 rounded-full" 
+                            style={{
+                              background: `conic-gradient(
+                                from 180deg,
+                                ${metrics.healthScore >= 66 ? '#10B981' :
+                                  metrics.healthScore >= 33 ? '#F59E0B' : '#EF4444'}
+                                ${metrics.healthScore}%,
+                                #F3F4F6 ${metrics.healthScore}%
+                              )`,
+                              transform: 'rotate(-180deg)',
+                              transformOrigin: 'center'
+                            }}
+                          ></div>
+                          <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <div className="bg-white rounded-full p-4 shadow-sm">
+                              <span 
+                                className="text-4xl font-bold block text-center"
+                                style={{
+                                  color: metrics.healthScore >= 66 ? '#10B981' :
+                                         metrics.healthScore >= 33 ? '#F59E0B' : '#EF4444'
+                                }}
+                              >
+                                {Math.round(metrics.healthScore)}
+                              </span>
+                              <span className="text-sm text-gray-500 block text-center">dari 100</span>
+                            </div>
+                          </div>
+                        </div>
 
-                  // Regular paragraphs
-                  return (
-                    <p key={index} className="text-gray-800 leading-relaxed">
-                      {processText(line)}
-                    </p>
-                  );
-                })}
-              </div>
+                        {/* Metrics */}
+                        <div className="flex-1">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                              <h4 className="text-sm text-gray-400 mb-2">Pengeluaran</h4>
+                              <div className="text-2xl font-semibold">{metrics.expenses.length}</div>
+                              <div className="text-sm text-gray-400">kategori</div>
+                            </div>
+                            <div>
+                              <h4 className="text-sm text-gray-400 mb-2">Rekomendasi</h4>
+                              <div className="text-2xl font-semibold">{metrics.recommendations.length}</div>
+                              <div className="text-sm text-gray-400">perbaikan</div>
+                            </div>
+                            <div>
+                              <h4 className="text-sm text-gray-400 mb-2">Status</h4>
+                              <div className="text-2xl font-semibold">{
+                                metrics.healthScore >= 66 ? 'Baik' :
+                                metrics.healthScore >= 33 ? 'Perlu Perhatian' : 'Kritis'
+                              }</div>
+                              <div className="text-sm text-gray-400">kesehatan</div>
+                            </div>
+                          </div>
 
-              {/* Footer */}
-              <div className="mt-10 pt-6 border-t border-gray-200">
-                <div className="flex items-center justify-center gap-2 text-sm text-gray-500 font-serif italic">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" 
-                      d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-                  <span className="bg-gradient-to-r from-gray-500 to-gray-600 bg-clip-text text-transparent">
-                    Analisis dibuat oleh Cuan Check AI
-                  </span>
-                </div>
-              </div>
-            </motion.div>
-          )}
-          {!aiInsights.data && !aiInsights.error && !aiInsights.loading && (
-            <div className="text-center py-12 text-white/60">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" 
-                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-              </svg>
-              <p className="text-sm">
-                Klik tombol "Analisis Keuangan" untuk mendapatkan saran keuangan personal yang disesuaikan dengan kondisi Anda.
-              </p>
-            </div>
+                          <div className="mt-8">
+                            <h4 className="text-sm text-gray-400 mb-3">Saran Cepat AI</h4>
+                            <ul className="space-y-2">
+                              {metrics.healthScore < 33 && (
+                                <li className="flex items-start gap-2">
+                                  <span className="text-yellow-500 mt-0.5">⚠️</span>
+                                  <span className="text-sm text-gray-600">Kondisi keuangan Anda memerlukan perhatian segera</span>
+                                </li>
+                              )}
+                              <li className="flex items-start gap-2">
+                                <span className="text-emerald-500 mt-0.5">💡</span>
+                                <span className="text-sm text-gray-600">Ada {metrics.recommendations.length} rekomendasi yang bisa diterapkan</span>
+                              </li>
+                              {metrics.expenses.length > 0 && (
+                                <li className="flex items-start gap-2">
+                                  <span className="text-blue-500 mt-0.5">📊</span>
+                                  <span className="text-sm text-gray-600">Kategori pengeluaran terbesar: {metrics.expenses[0].category}</span>
+                                </li>
+                              )}
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Charts Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {metrics.expenses.length > 0 && (
+                        <div className="glassmorphic rounded-2xl p-6">
+                          <h3 className="text-lg font-semibold mb-2">Distribusi Pengeluaran</h3>
+                          <p className="text-sm text-gray-500 mb-4">
+                            Visualisasi proporsi pengeluaran per kategori untuk membantu identifikasi area yang memerlukan perhatian.
+                          </p>
+                          <div className="h-[300px] relative">
+                            <Doughnut 
+                              data={visualizations.expenses.data}
+                              options={visualizations.expenses.options}
+                            />
+                          </div>
+                          {/* Top Expenses Analysis */}
+                          <div className="mt-4 p-4 bg-white/5 rounded-lg">
+                            <h4 className="text-sm font-medium text-gray-500 mb-2">Analisis Pengeluaran Tertinggi</h4>
+                            <ul className="list-disc list-inside text-gray-600 text-sm">
+                              {metrics.expenses
+                                .sort((a, b) => b.percentage - a.percentage)
+                                .slice(0, 2)
+                                .map((expense, index) => (
+                                  <li key={index} className="flex items-start gap-2">
+                                    <span className="text-blue-500 mt-0.5">{index + 1}.</span>
+                                    <span>{expense.category} menyumbang {expense.percentage}% dari total pengeluaran</span>
+                                  </li>
+                                ))}
+                            </ul>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {metrics.recommendations.length > 0 && (
+                        <div className="glassmorphic rounded-2xl p-6">
+                          <h3 className="text-lg font-semibold mb-2">Rekomendasi Pengurangan</h3>
+                          <p className="text-sm text-gray-500 mb-4">
+                            Target pengurangan pengeluaran yang disarankan untuk meningkatkan kesehatan keuangan Anda.
+                          </p>
+                          <div className="h-[300px] relative">
+                            <Bar 
+                              data={visualizations.recommendations.data}
+                              options={visualizations.recommendations.options}
+                            />
+                          </div>
+                          {/* Recommendations Analysis */}
+                          <div className="mt-4 p-4 bg-white/5 rounded-lg">
+                            <h4 className="text-sm font-medium text-gray-500 mb-2">Langkah-langkah Penerapan</h4>
+                            <ul className="list-disc list-inside text-gray-600 text-sm">
+                              {metrics.recommendations.map((rec, index) => (
+                                <li key={index} className="flex items-start gap-2">
+                                  <span className="text-green-500 mt-0.5">✓</span>
+                                  <span>Kurangi {rec.category} sebesar {rec.reduction}% untuk mengoptimalkan pengeluaran</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Overall Recommendations */}
+                    <div className="glassmorphic rounded-2xl p-6">
+                      <h3 className="text-lg font-semibold mb-4">Rekomendasi AI Advisor</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                          <div className="p-4 bg-white/5 rounded-lg">
+                            <h4 className="text-sm font-medium text-blue-500 mb-2">Prioritas Utama</h4>
+                            <p className="text-sm">
+                              {metrics.healthScore < 33 
+                                ? 'Fokus pada pengurangan pengeluaran yang signifikan dan cari sumber pendapatan tambahan.'
+                                : metrics.healthScore < 66
+                                ? 'Optimalkan pengeluaran dan mulai membangun dana darurat.'
+                                : 'Pertahankan pola pengeluaran dan mulai investasi untuk masa depan.'}
+                            </p>
+                          </div>
+                          <div className="p-4 bg-white/5 rounded-lg">
+                            <h4 className="text-sm font-medium text-green-500 mb-2">Tips Penghematan</h4>
+                            <ul className="list-disc list-inside text-gray-600 text-sm">
+                              <li>Tetapkan budget maksimal per kategori</li>
+                              <li>Gunakan aplikasi pencatat pengeluaran</li>
+                              <li>Sisihkan uang di awal bulan</li>
+                            </ul>
+                          </div>
+                        </div>
+                        <div className="space-y-4">
+                          <div className="p-4 bg-white/5 rounded-lg">
+                            <h4 className="text-sm font-medium text-purple-500 mb-2">Target Jangka Pendek</h4>
+                            <div className="flex items-center text-sm text-green-500">
+                              <span className="mr-2">⚡</span>
+                              <span>Kurangi Makan ({metrics.recommendations[0]?.targetReduction || 0}%)</span>
+                            </div>
+                          </div>
+                          <div className="p-4 bg-white/5 rounded-lg">
+                            <h4 className="text-sm font-medium text-orange-500 mb-2">Langkah Selanjutnya</h4>
+                            <p className="text-sm">
+                              {metrics.healthScore < 33 
+                                ? 'Buat rencana penghematan yang ketat dan evaluasi setiap pengeluaran non-esensial.'
+                                : metrics.healthScore < 66
+                                ? 'Mulai tracking pengeluaran harian dan identifikasi area pemborosan.'
+                                : 'Pertimbangkan untuk mulai berinvestasi dan diversifikasi pendapatan.'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* AI Analysis */}
+                    <div className="mt-8">
+                      <h2 className="text-2xl font-bold text-gray-800 mb-6">Rekomendasi Keuangan</h2>
+                      {aiInsights.data?.aiAnalysis ? (
+                        <div className="space-y-8">
+                          {/* Prioritas Utama Section */}
+                          <div className="bg-blue-50 rounded-xl p-6 shadow-sm border border-blue-100">
+                            <h3 className="text-lg font-semibold text-blue-600 mb-3">Prioritas Utama</h3>
+                            <p className="text-gray-700 leading-relaxed">{aiInsights.data.aiAnalysis.prioritasUtama}</p>
+                          </div>
+
+                          {/* Analisis Kesehatan Section */}
+                          <div className="bg-green-50 rounded-xl p-6 shadow-sm border border-green-100">
+                            <h3 className="text-lg font-semibold text-green-600 mb-3">Analisis Kesehatan Keuangan</h3>
+                            <p className="text-gray-700 leading-relaxed">{aiInsights.data.aiAnalysis.analisisKesehatan || "Belum ada analisis kesehatan keuangan."}</p>
+                          </div>
+
+                          {/* Rekomendasi Section */}
+                          <div className="bg-purple-50 rounded-xl p-6 shadow-sm border border-purple-100">
+                            <h3 className="text-lg font-semibold text-purple-600 mb-3">Rekomendasi Spesifik</h3>
+                            <p className="text-gray-700 leading-relaxed whitespace-pre-line">{aiInsights.data.aiAnalysis.rekomendasiSpesifik}</p>
+                          </div>
+
+                          {/* Langkah Selanjutnya Section */}
+                          <div className="bg-orange-50 rounded-xl p-6 shadow-sm border border-orange-100">
+                            <h3 className="text-lg font-semibold text-orange-600 mb-3">Langkah Selanjutnya</h3>
+                            <p className="text-gray-700 leading-relaxed whitespace-pre-line">{aiInsights.data.aiAnalysis.langkahSelanjutnya}</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-gray-400">
+                          <p>Belum ada analisis AI. Klik tombol Analisis untuk mendapatkan insight.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+            </>
           )}
         </div>
       </motion.div>

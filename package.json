@@ -7,9 +7,13 @@
     "dev": "cd client && npm run dev"
   },
   "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
     "node-fetch": "^2.7.0"
   },
   "devDependencies": {
-    "@netlify/functions": "^2.4.1"
+    "@netlify/functions": "^2.4.1",
+    "netlify-cli": "^17.38.0"
   }
 }

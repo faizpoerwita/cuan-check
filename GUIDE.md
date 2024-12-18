@@ -158,3 +158,119 @@ GROQ_API_KEY=your_groq_api_key_here
 - Gunakan error handling yang proper
 - Validasi input user
 - Maintain kode yang bersih dan terorganisir
+
+# Cuan Check - Developer Guide
+
+## Project Overview
+Cuan Check is a personal finance management application that helps users track their expenses and receive AI-powered financial insights.
+
+## Setup Instructions
+
+### Prerequisites
+- Node.js (v16 or higher)
+- npm or yarn
+- A Groq API key for AI insights
+
+### Environment Setup
+1. Clone the repository
+2. Create `.env` files:
+   ```
+   # In root directory
+   GROQ_API_KEY=your_groq_api_key
+
+   # In netlify/functions
+   GROQ_API_KEY=your_groq_api_key
+   ```
+
+### Installation
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+```
+
+## Project Structure
+```
+cuan-check/
+├── client/               # Frontend React application
+│   ├── src/
+│   │   ├── api/         # API client functions
+│   │   ├── components/  # Reusable UI components
+│   │   ├── pages/      # Page components
+│   │   └── utils/      # Utility functions
+├── netlify/
+│   └── functions/       # Serverless functions
+└── public/              # Static assets
+```
+
+## Key Features
+1. Expense Tracking
+   - Input and categorize expenses
+   - View expense breakdown
+   - Track monthly savings
+
+2. AI Financial Insights
+   - Personalized financial analysis
+   - Actionable recommendations
+   - Health score calculation
+
+3. Data Visualization
+   - Interactive charts
+   - Category-wise breakdown
+   - Trend analysis
+
+## Development Guidelines
+
+### API Integration
+The application uses Groq's API for AI insights. Ensure proper error handling and rate limiting.
+
+### UI Components
+- Use Tailwind CSS for styling
+- Follow the glassmorphic design system
+- Ensure responsive design
+- Maintain dark/light mode compatibility
+
+### State Management
+- Use React hooks for local state
+- Implement proper loading states
+- Handle errors gracefully
+
+### Performance
+- Optimize API calls
+- Implement proper caching
+- Minimize bundle size
+
+## Deployment
+The application is deployed on Netlify:
+1. Ensure all environment variables are set in Netlify
+2. Configure build settings:
+   ```
+   Build command: npm run build
+   Publish directory: dist
+   Functions directory: netlify/functions
+   ```
+
+## Troubleshooting
+1. API Issues
+   - Check API key configuration
+   - Verify request format
+   - Check response handling
+
+2. Build Issues
+   - Clear node_modules and reinstall
+   - Verify environment variables
+   - Check build logs
+
+## Contributing
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## Version History
+See CHANGELOG.md for detailed version history.

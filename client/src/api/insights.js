@@ -1,99 +1,88 @@
-const API_KEY = import.meta.env.VITE_API_KEY || "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";
-const API_URL = import.meta.env.VITE_API_URL || "https://api.groq.com/openai/v1/chat/completions";
+import { formatCurrency } from '../utils/format';
+import Chart from 'chart.js/auto';
+import { CategoryScale, LinearScale, PointElement, LineElement, ArcElement, BarElement } from 'chart.js';
 
-export const getFinancialInsights = async (data) => {
+// Register Chart.js components
+Chart.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, BarElement);
+
+const formatCurrencyId = (value) => {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(value);
+};
+
+export async function getFinancialInsights(financialData) {
   try {
-    // Basic Information
-    const monthlyIncome = data.totalIncome;
-    const currentAge = data.usiaSaatIni;
-    const retirementAge = data.targetUsiaPensiun;
-    const yearsToRetirement = retirementAge - currentAge;
-
-    // Targets
-    const target1Year = data.targetTabungan1Tahun;
-    const target2Year = data.targetTabungan2Tahun;
-
-    // Monthly Expenses Breakdown - Simple aggregation
-    const expenses = data.transactions.reduce((acc, transaction) => {
-      const { label, amount } = transaction;
-      acc[label.toLowerCase()] = (acc[label.toLowerCase()] || 0) + amount;
-      return acc;
-    }, {});
-
-    // Calculate total expenses
-    const totalExpenses = Object.values(expenses).reduce((sum, amount) => sum + amount, 0);
-
-    // Financial Summary
-    const monthlySavings = monthlyIncome - totalExpenses;
-    const yearlySavings = monthlySavings * 12;
-    const savingsRatio = (monthlySavings / monthlyIncome) * 100;
-
-    // Prepare the system message
-    const systemMessage = {
-      role: "system",
-      content: `Anda adalah asisten keuangan AI yang menganalisis data berikut:
-
-[DATA KEUANGAN]
-• Pendapatan Bulanan: ${monthlyIncome}
-• Total Pengeluaran: ${totalExpenses}
-• Tabungan Bulanan: ${monthlySavings}
-• Rasio Tabungan: ${savingsRatio.toFixed(1)}%
-
-[RINCIAN PENGELUARAN]
-${Object.entries(expenses)
-  .map(([label, amount]) => `• ${label}: ${amount}`)
-  .join('\n')}
-
-[TARGET KEUANGAN]
-• Target 1 Tahun: ${target1Year} 
-• Target 2 Tahun: ${target2Year} 
-
-[INFORMASI TAMBAHAN]
-• Usia: ${currentAge} tahun
-• Target Usia Pensiun: ${retirementAge} tahun
-• Waktu ke Pensiun: ${yearsToRetirement} tahun
-
-Berikan analisis mendalam dengan:
-1. Status kesehatan keuangan berdasarkan pola pengeluaran dan tabungan
-2. Identifikasi pola pengeluaran dan area yang perlu perhatian
-3. Rekomendasi spesifik untuk optimasi keuangan
-4. Target jangka pendek yang terukur
-5. Proyeksi dan potensi pertumbuhan keuangan
-
-Analisis harus mempertimbangkan semua aspek data yang diberikan dan memberikan wawasan yang actionable.`
+    // Format the data to match server expectations
+    const formattedData = {
+      data: {
+        monthlyIncome: financialData.income,
+        expenses: financialData.expenses,
+        age: financialData.currentAge,
+        retirementAge: financialData.retirementAge,
+        target1Year: financialData.target1Year,
+        target2Year: financialData.target2Year
+      }
     };
-
-    const messages = [systemMessage];
 
     const response = await fetch('/.netlify/functions/insights', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        messages,
-        monthlyIncome,
-        currentAge,
-        retirementAge,
-        yearsToRetirement,
-        target1Year,
-        target2Year,
-        expenses,
-        totalExpenses,
-        monthlySavings,
-        yearlySavings,
-        savingsRatio
-      })
+      body: JSON.stringify(formattedData)
     });
 
     if (!response.ok) {
-      throw new Error('Network response was not ok');
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to fetch insights');
     }
 
-    const result = await response.json();
-    return result.data; // Return just the data string
+    const data = await response.json();
+    return {
+      status: data.status,
+      expenses: data.expenses,
+      risk: data.risk,
+      recommendations: data.recommendations,
+      aiAnalysis: {
+        prioritasUtama: data.aiAnalysis.prioritasutama,
+        analisisKesehatan: data.aiAnalysis.analisiskesehatan,
+        rekomendasiSpesifik: data.aiAnalysis.rekomendasispesifik,
+        langkahSelanjutnya: data.aiAnalysis.langkahselanjutnya
+      },
+      summary: data.summary
+    };
   } catch (error) {
-    console.error('Error generating insights:', error);
+    console.error('Error fetching insights:', error);
     throw error;
   }
 };
+
+function calculateFinancialHealthScore({ monthlySavings, savingsRatio, expenseBreakdown }) {
+  let score = 100;
+
+  // Penalize negative savings
+  if (monthlySavings < 0) {
+    score -= 30;
+  }
+
+  // Evaluate savings ratio
+  if (savingsRatio < 20) {
+    score -= 20;
+  } else if (savingsRatio < 10) {
+    score -= 30;
+  }
+
+  // Check expense distribution
+  const highestExpensePercentage = expenseBreakdown[0]?.percentage || 0;
+  if (highestExpensePercentage > 50) {
+    score -= 20;
+  } else if (highestExpensePercentage > 30) {
+    score -= 10;
+  }
+
+  return Math.max(0, Math.min(100, score));
+}
