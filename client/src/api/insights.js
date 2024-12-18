@@ -16,29 +16,20 @@ const formatCurrencyId = (value) => {
 
 export async function getFinancialInsights(financialData) {
   try {
-    // Format the data to match server expectations
-    const formattedData = {
-      data: {
-        monthlyIncome: financialData.income,
-        expenses: financialData.expenses,
-        age: financialData.currentAge,
-        retirementAge: financialData.retirementAge,
-        target1Year: financialData.target1Year,
-        target2Year: financialData.target2Year
-      }
-    };
+    console.log('Data being sent to getFinancialInsights:', financialData);
 
     const response = await fetch('/.netlify/functions/insights', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(formattedData)
+      body: JSON.stringify(financialData)
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to fetch insights');
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Error response:', errorData);
+      throw new Error(errorData.error || `Failed to fetch insights: ${response.status}`);
     }
 
     const data = await response.json();
@@ -57,32 +48,35 @@ export async function getFinancialInsights(financialData) {
     };
   } catch (error) {
     console.error('Error fetching insights:', error);
-    throw error;
+    throw new Error('Failed to fetch insights');
   }
-};
+}
 
-function calculateFinancialHealthScore({ monthlySavings, savingsRatio, expenseBreakdown }) {
-  let score = 100;
-
-  // Penalize negative savings
+export function calculateFinancialHealthScore({ monthlySavings, savingsRatio, expenseBreakdown }) {
+  let score = 70; // Base score
+  
+  // Evaluate savings
   if (monthlySavings < 0) {
     score -= 30;
+  } else if (savingsRatio >= 0.3) {
+    score += 15;
+  } else if (savingsRatio >= 0.2) {
+    score += 10;
+  } else if (savingsRatio >= 0.1) {
+    score += 5;
   }
-
-  // Evaluate savings ratio
-  if (savingsRatio < 20) {
-    score -= 20;
-  } else if (savingsRatio < 10) {
-    score -= 30;
+  
+  // Evaluate expense distribution
+  if (expenseBreakdown.length > 0) {
+    const highestExpenseRatio = expenseBreakdown[0].percentage / 100;
+    if (highestExpenseRatio > 0.5) {
+      score -= 15;
+    } else if (highestExpenseRatio > 0.4) {
+      score -= 10;
+    } else if (highestExpenseRatio > 0.3) {
+      score -= 5;
+    }
   }
-
-  // Check expense distribution
-  const highestExpensePercentage = expenseBreakdown[0]?.percentage || 0;
-  if (highestExpensePercentage > 50) {
-    score -= 20;
-  } else if (highestExpensePercentage > 30) {
-    score -= 10;
-  }
-
+  
   return Math.max(0, Math.min(100, score));
 }
