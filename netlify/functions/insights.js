@@ -7,12 +7,12 @@ const corsHeaders = {
   'Content-Type': 'application/json'
 };
 
-const GROQ_API_KEY = process.env.GROQ_API_KEY || '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';
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 async function getAIInsights(financialData) {
   try {
-    console.log('Fetching AI insights for:', financialData);
+    console.log('Fetching AI insights for:', JSON.stringify(financialData, null, 2));
     
     const systemMessage = {
       role: "system",
@@ -43,6 +43,10 @@ Berikan analisis dalam format berikut (gunakan ### sebagai pemisah setiap bagian
 Berikan analisis yang praktis dan dapat diterapkan langsung.`
     };
 
+    if (!GROQ_API_KEY) {
+      throw new Error('GROQ_API_KEY is not configured');
+    }
+
     console.log('Sending request to Groq API...');
     
     const response = await axios.post(GROQ_API_URL, {
@@ -61,7 +65,11 @@ Berikan analisis yang praktis dan dapat diterapkan langsung.`
 
     console.log('Received response from Groq');
     
-    const aiResponse = response.data.choices[0]?.message?.content || '';
+    if (!response.data?.choices?.[0]?.message?.content) {
+      throw new Error('Invalid response from Groq API');
+    }
+
+    const aiResponse = response.data.choices[0].message.content;
     console.log('AI Response:', aiResponse);
 
     // Parse sections using the ### delimiter
@@ -84,40 +92,42 @@ Berikan analisis yang praktis dan dapat diterapkan langsung.`
     };
 
     // Merge parsed sections with defaults
-    const finalSections = {
+    return {
       ...defaultSections,
       ...sections
     };
-
-    console.log('Parsed sections:', finalSections);
-    
-    return finalSections;
   } catch (error) {
-    console.error('AI Analysis Error:', error);
+    console.error('Error in getAIInsights:', error);
     throw error;
   }
 }
 
 function calculateHealthScore(data) {
-  let score = 100;
+  let score = 70; // Base score
   
-  // Penalize negative savings
-  if (data.monthlySavings < 0) {
-    score -= 30;
-  }
-  
-  // Evaluate savings percentage
-  if (data.savingsPercentage < 20) {
+  // Adjust for savings ratio
+  if (data.savingsPercentage >= 30) {
+    score += 15;
+  } else if (data.savingsPercentage >= 20) {
+    score += 10;
+  } else if (data.savingsPercentage >= 10) {
+    score += 5;
+  } else if (data.savingsPercentage < 0) {
     score -= 20;
-  } else if (data.savingsPercentage < 10) {
-    score -= 30;
   }
   
-  // Check expense distribution
+  // Adjust for expense distribution
   const highestExpensePercentage = data.expenseBreakdown[0]?.percentage || 0;
   if (highestExpensePercentage > 50) {
-    score -= 20;
+    score -= 15;
+  } else if (highestExpensePercentage > 40) {
+    score -= 10;
   } else if (highestExpensePercentage > 30) {
+    score -= 5;
+  }
+  
+  // Adjust for negative savings
+  if (data.monthlySavings < 0) {
     score -= 10;
   }
   
@@ -126,6 +136,8 @@ function calculateHealthScore(data) {
 }
 
 exports.handler = async function (event, context) {
+  console.log('Received event:', JSON.stringify(event, null, 2));
+
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
@@ -143,17 +155,17 @@ exports.handler = async function (event, context) {
   }
 
   try {
-    const requestBody = JSON.parse(event.body);
-    console.log('Received request body:', requestBody);
-
-    if (!requestBody || !requestBody.data) {
-      throw new Error('Invalid request body structure');
+    if (!event.body) {
+      throw new Error('Request body is empty');
     }
 
-    const { monthlyIncome, expenses, age, retirementAge, target1Year, target2Year } = requestBody.data;
+    const requestBody = JSON.parse(event.body);
+    console.log('Parsed request body:', JSON.stringify(requestBody, null, 2));
 
-    if (!monthlyIncome) {
-      throw new Error('Missing required field: monthlyIncome');
+    const { currentAge, expenses, income, retirementAge, target1Year, target2Year } = requestBody;
+
+    if (!income) {
+      throw new Error('Missing required field: income');
     }
 
     if (!expenses || typeof expenses !== 'object') {
@@ -161,9 +173,15 @@ exports.handler = async function (event, context) {
     }
 
     // Calculate basic metrics
-    const totalExpenses = Object.values(expenses).reduce((sum, amount) => sum + Number(amount || 0), 0);
-    const monthlySavings = monthlyIncome - totalExpenses;
-    const savingsPercentage = monthlyIncome > 0 ? (monthlySavings / monthlyIncome) * 100 : 0;
+    const totalExpenses = Object.entries(expenses).reduce((sum, [_, amount]) => sum + Number(amount || 0), 0);
+    const monthlySavings = income - totalExpenses;
+    const savingsPercentage = income > 0 ? (monthlySavings / income) * 100 : 0;
+
+    console.log('Calculated metrics:', {
+      totalExpenses,
+      monthlySavings,
+      savingsPercentage
+    });
 
     // Process expense breakdown
     const expenseBreakdown = Object.entries(expenses)
@@ -183,7 +201,7 @@ exports.handler = async function (event, context) {
 
     // Get AI insights
     const financialMetrics = {
-      monthlyIncome,
+      monthlyIncome: income,
       totalExpenses,
       monthlySavings,
       savingsPercentage,
@@ -192,13 +210,14 @@ exports.handler = async function (event, context) {
       topExpensePercentage: expenseBreakdown[0]?.percentage || 0
     };
 
+    console.log('Sending metrics to AI:', JSON.stringify(financialMetrics, null, 2));
     const aiAnalysis = await getAIInsights(financialMetrics);
 
     // Create response
     const responseData = {
       status: {
         condition: monthlySavings >= 0 ? 'surplus' : 'deficit',
-        monthlyIncome: Number(monthlyIncome),
+        monthlyIncome: Number(income),
         totalExpenses: totalExpenses,
         monthlySavings: monthlySavings,
         savingsPercentage: Number(savingsPercentage.toFixed(1)),
@@ -240,6 +259,8 @@ exports.handler = async function (event, context) {
       }
     };
 
+    console.log('Sending response:', JSON.stringify(responseData, null, 2));
+
     return {
       statusCode: 200,
       headers: corsHeaders,
@@ -247,13 +268,21 @@ exports.handler = async function (event, context) {
     };
   } catch (error) {
     console.error('Error processing request:', error);
+    console.error('Error stack:', error.stack);
+    
+    const errorResponse = {
+      error: error.message || 'Internal server error',
+      details: error.stack,
+      type: error.name,
+      response: error.response?.data
+    };
+
+    console.log('Error response:', JSON.stringify(errorResponse, null, 2));
+
     return {
       statusCode: error.response?.status || 500,
       headers: corsHeaders,
-      body: JSON.stringify({
-        error: error.message || 'Internal server error',
-        details: error.stack
-      })
+      body: JSON.stringify(errorResponse)
     };
   }
 };
