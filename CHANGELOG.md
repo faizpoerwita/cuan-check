@@ -45,6 +45,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Menu transition smoothness
 - Active state visibility on mobile
 
+## [0.2.2] - 2024-12-18
+
+### Fixed
+- Fixed Netlify function environment configuration
+- Enhanced error handling and logging in serverless functions
+- Improved API request/response handling
+- Updated client-side data formatting
+
 ## [0.2.2] - 2024-12-16
 
 ### Changed
