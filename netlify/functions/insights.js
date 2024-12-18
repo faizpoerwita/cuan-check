@@ -1,4 +1,5 @@
 const axios = require('axios');
+require('dotenv').config();
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,6 +13,16 @@ const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 async function getAIInsights(financialData) {
   try {
+    if (!GROQ_API_KEY) {
+      console.error('GROQ_API_KEY is not set in environment variables');
+      throw new Error('API key configuration error');
+    }
+
+    console.log('Environment check:', {
+      hasGroqKey: !!GROQ_API_KEY,
+      envVars: Object.keys(process.env)
+    });
+
     console.log('Fetching AI insights for:', JSON.stringify(financialData, null, 2));
     
     const systemMessage = {
@@ -43,59 +54,65 @@ Berikan analisis dalam format berikut (gunakan ### sebagai pemisah setiap bagian
 Berikan analisis yang praktis dan dapat diterapkan langsung.`
     };
 
-    if (!GROQ_API_KEY) {
-      throw new Error('GROQ_API_KEY is not configured');
-    }
-
     console.log('Sending request to Groq API...');
     
-    const response = await axios.post(GROQ_API_URL, {
-      model: "llama-3.3-70b-versatile",
-      messages: [systemMessage],
-      temperature: 0.7,
-      max_tokens: 1024,
-      top_p: 0.9,
-      frequency_penalty: 0.3
-    }, {
-      headers: {
-        'Authorization': `Bearer ${GROQ_API_KEY}`,
-        'Content-Type': 'application/json'
-      }
-    });
+    try {
+      const response = await axios.post(GROQ_API_URL, {
+        model: "llama-3.3-70b-versatile",
+        messages: [systemMessage],
+        temperature: 0.7,
+        max_tokens: 1024,
+        top_p: 0.9,
+        frequency_penalty: 0.3
+      }, {
+        headers: {
+          'Authorization': `Bearer ${GROQ_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      });
 
-    console.log('Received response from Groq');
-    
-    if (!response.data?.choices?.[0]?.message?.content) {
-      throw new Error('Invalid response from Groq API');
-    }
-
-    const aiResponse = response.data.choices[0].message.content;
-    console.log('AI Response:', aiResponse);
-
-    // Parse sections using the ### delimiter
-    const sections = aiResponse.split('###').reduce((acc, section) => {
-      const trimmedSection = section.trim();
-      if (!trimmedSection) return acc;
+      console.log('Groq API Response Status:', response.status);
       
-      const [title, ...content] = trimmedSection.split('\n');
-      const key = title.trim().toLowerCase().replace(/\s+/g, '');
-      acc[key] = content.join('\n').trim();
-      return acc;
-    }, {});
+      if (!response.data?.choices?.[0]?.message?.content) {
+        console.error('Invalid Groq API response:', response.data);
+        throw new Error('Invalid API response format');
+      }
 
-    // Ensure all required sections exist
-    const defaultSections = {
-      prioritasutama: 'Belum ada prioritas yang ditetapkan.',
-      analisiskesehatan: 'Belum ada analisis kesehatan keuangan.',
-      rekomendasispesifik: 'Belum ada rekomendasi spesifik.',
-      langkahselanjutnya: 'Belum ada langkah selanjutnya yang ditetapkan.'
-    };
+      const aiResponse = response.data.choices[0].message.content;
+      console.log('AI Response:', aiResponse);
 
-    // Merge parsed sections with defaults
-    return {
-      ...defaultSections,
-      ...sections
-    };
+      // Parse sections using the ### delimiter
+      const sections = aiResponse.split('###').reduce((acc, section) => {
+        const trimmedSection = section.trim();
+        if (!trimmedSection) return acc;
+        
+        const [title, ...content] = trimmedSection.split('\n');
+        const key = title.trim().toLowerCase().replace(/\s+/g, '');
+        acc[key] = content.join('\n').trim();
+        return acc;
+      }, {});
+
+      // Ensure all required sections exist
+      const defaultSections = {
+        prioritasutama: 'Belum ada prioritas yang ditetapkan.',
+        analisiskesehatan: 'Belum ada analisis kesehatan keuangan.',
+        rekomendasispesifik: 'Belum ada rekomendasi spesifik.',
+        langkahselanjutnya: 'Belum ada langkah selanjutnya yang ditetapkan.'
+      };
+
+      // Merge parsed sections with defaults
+      return {
+        ...defaultSections,
+        ...sections
+      };
+    } catch (apiError) {
+      console.error('Groq API Error:', {
+        status: apiError.response?.status,
+        data: apiError.response?.data,
+        message: apiError.message
+      });
+      throw new Error(`Groq API error: ${apiError.message}`);
+    }
   } catch (error) {
     console.error('Error in getAIInsights:', error);
     throw error;
@@ -136,7 +153,11 @@ function calculateHealthScore(data) {
 }
 
 exports.handler = async function (event, context) {
-  console.log('Received event:', JSON.stringify(event, null, 2));
+  console.log('Function environment:', {
+    nodeEnv: process.env.NODE_ENV,
+    hasGroqKey: !!process.env.GROQ_API_KEY,
+    envVars: Object.keys(process.env)
+  });
 
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -159,6 +180,7 @@ exports.handler = async function (event, context) {
       throw new Error('Request body is empty');
     }
 
+    console.log('Raw request body:', event.body);
     const requestBody = JSON.parse(event.body);
     console.log('Parsed request body:', JSON.stringify(requestBody, null, 2));
 
