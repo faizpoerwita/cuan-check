@@ -5,8 +5,8 @@
 
 [functions]
   node_bundler = "esbuild"
+  external_node_modules = ["axios", "node-fetch", "dotenv"]
   included_files = ["package.json", ".env"]
-  external_node_modules = ["node-fetch", "dotenv"]
 
 [dev]
   framework = "vite"
